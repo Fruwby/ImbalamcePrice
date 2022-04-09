@@ -25,42 +25,43 @@ def string_from_month(month):
         return str(month)
 
 #Load ARC, actual SI, NRV, alpha data per month and merge
-for month in months:
-    file_loc_ARC = folder_ARC_data + '//ARC_VolumeLevelPrices_2020_'+string_from_month(month)+'.csv'
-    file_loc_SI_imbPrice = folder_SI_imbPrice_data + '//ImbalanceNrvPrices_2020'+string_from_month(month)+'.csv'
-    file_loc_act_vol = folder_activated_volumes + '//ActivatedEnergyVolumes_2020'+string_from_month(month)+'.csv'
+for year in years:
+    for month in months:
+        file_loc_ARC = folder_ARC_data + '//ARC_VolumeLevelPrices_2020_'+string_from_month(month)+'.csv'
+        file_loc_SI_imbPrice = folder_SI_imbPrice_data + '//ImbalanceNrvPrices_2020'+string_from_month(month)+'.csv'
+        file_loc_act_vol = folder_activated_volumes + '//ActivatedEnergyVolumes_2020'+string_from_month(month)+'.csv'
 
-    df_ARC = pd.read_csv(file_loc_ARC, delimiter=';')
-    df_ARC = df_ARC.rename({'#NAME?': '-Max'}, axis=1)
-    columns = list(df_ARC.columns)
+        df_ARC = pd.read_csv(file_loc_ARC, delimiter=';')
+        df_ARC = df_ARC.rename({'#NAME?': '-Max'}, axis=1)
+        columns = list(df_ARC.columns)
 
-    for i in range(2,12):
-        df_ARC[columns[i]].fillna(df_ARC['-Max'], inplace=True)
+        for i in range(2,12):
+            df_ARC[columns[i]].fillna(df_ARC['-Max'], inplace=True)
 
-    for i in range(12,22):
-        df_ARC[columns[i]].fillna(df_ARC['Max'], inplace=True)
+        for i in range(12,22):
+            df_ARC[columns[i]].fillna(df_ARC['Max'], inplace=True)
 
-    df_ARC['Datetime'] = pd.to_datetime(df_ARC['Quarter'].str[:16], format=datetime_format)
-    df_ARC.drop(['Quarter', '-Max', 'Max'], axis=1,inplace=True)
+        df_ARC['Datetime'] = pd.to_datetime(df_ARC['Quarter'].str[:16], format=datetime_format)
+        df_ARC.drop(['Quarter', '-Max', 'Max'], axis=1,inplace=True)
 
-    df_SI_imbPrice = pd.read_csv(file_loc_SI_imbPrice,decimal=',')[['NRV','SI','Alpha', 'PPOS', 'EXECDATE', 'QUARTERHOUR','MIP', 'MDP']]
-    df_SI_imbPrice['Datetime_string'] = df_SI_imbPrice['EXECDATE'] + ' ' + df_SI_imbPrice['QUARTERHOUR'].str[:5]
-    df_SI_imbPrice['Datetime'] = pd.to_datetime(df_SI_imbPrice['Datetime_string'], format=datetime_format)
-    df_SI_imbPrice.drop(['EXECDATE','QUARTERHOUR','Datetime_string'],axis=1,inplace=True)
+        df_SI_imbPrice = pd.read_csv(file_loc_SI_imbPrice,decimal=',')[['NRV','SI','Alpha', 'PPOS', 'EXECDATE', 'QUARTERHOUR','MIP', 'MDP']]
+        df_SI_imbPrice['Datetime_string'] = df_SI_imbPrice['EXECDATE'] + ' ' + df_SI_imbPrice['QUARTERHOUR'].str[:5]
+        df_SI_imbPrice['Datetime'] = pd.to_datetime(df_SI_imbPrice['Datetime_string'], format=datetime_format)
+        df_SI_imbPrice.drop(['EXECDATE','QUARTERHOUR','Datetime_string'],axis=1,inplace=True)
 
-    df_act_vol = pd.read_csv(file_loc_act_vol, delimiter=',', decimal=',')[['execdate', 'strQuarter', 'GUV', 'Vol_GCC_I', 'GDV', 'Vol_GCC_D']]
-    df_act_vol['Datetime_string'] = df_act_vol['execdate'] + ' ' + df_act_vol['strQuarter'].str[:5]
-    df_act_vol['Datetime'] = pd.to_datetime(df_act_vol['Datetime_string'], format=datetime_format)
-    df_act_vol.drop(['execdate', 'strQuarter', 'Datetime_string'], axis=1,inplace=True)
-    df_act_vol.replace(np.nan, 0,inplace=True)
+        df_act_vol = pd.read_csv(file_loc_act_vol, delimiter=',', decimal=',')[['execdate', 'strQuarter', 'GUV', 'Vol_GCC_I', 'GDV', 'Vol_GCC_D']]
+        df_act_vol['Datetime_string'] = df_act_vol['execdate'] + ' ' + df_act_vol['strQuarter'].str[:5]
+        df_act_vol['Datetime'] = pd.to_datetime(df_act_vol['Datetime_string'], format=datetime_format)
+        df_act_vol.drop(['execdate', 'strQuarter', 'Datetime_string'], axis=1,inplace=True)
+        df_act_vol.replace(np.nan, 0,inplace=True)
 
-    df_combined_month = pd.merge(df_ARC,df_SI_imbPrice,on='Datetime')
-    df_combined_month = pd.merge(df_combined_month,df_act_vol,on='Datetime')
+        df_combined_month = pd.merge(df_ARC,df_SI_imbPrice,on='Datetime')
+        df_combined_month = pd.merge(df_combined_month,df_act_vol,on='Datetime')
 
-    if month == 1:
-        df_all_year = df_combined_month
-    else:
-        df_all_year = pd.concat([df_all_year,df_combined_month])
+        if month == 1:
+            df_all_year = df_combined_month
+        else:
+            df_all_year = pd.concat([df_all_year,df_combined_month])
 
 #Calculate imbalance price without alpha
 
